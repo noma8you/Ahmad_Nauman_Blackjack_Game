@@ -14,7 +14,6 @@ Try to get a score of as close to 21 as you can without going over
 The Dealer's score will be revealed after all players are done and the winner will be determined
 
 Some features include:
-Users can manually input the value of an Ace (1 or 11)
 There is random card dealing every round
 Automatic Ace value for the dealer
 ASCII art to display visual cards
