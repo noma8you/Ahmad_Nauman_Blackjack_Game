@@ -8,19 +8,22 @@ using namespace std;
 
 string hit_or_stay(){
     string play;
-    cout<<"HIT or STAY: ";
+    cout<<"HIT or STAY: "; //asks for player input
     cin>>play;
+    while(play!="HIT"&&play!="STAY"){
+        cout<<"Invalid input. Please type HIT or STAY: ";
+        cin>>play;
+    }
     return play;
 }
 
 void hit(string card[], vector<string> &player1){
     int deal;
     while(true){
-        deal=rand()%52;
-        if(card[deal]=="X"){
+        deal=rand()%52; //for random card dealing
+        if(card[deal]=="X"){ //that card on the map will be marked with X, so it will not be picked again (removed from deck)
             continue;
-        }
-        else{
+        } else {
             player1.push_back(card[deal]);
             card[deal]="X";
             break;
@@ -29,92 +32,96 @@ void hit(string card[], vector<string> &player1){
 }
 
 void display_card_info(vector<string> &player1, int player1_bs, int player_number){
-    if(player1_bs<22){ //only shows if player isnt bust yet
-        cout<<"Player "<<player_number<<"'s card(s): ";
-        for(int i=0;i<player1.size();i++){
-            cout<<player1[i]<<" ";
+    if(player_number==0){
+        cout<<"Dealer's cards reveal: "<<endl; //at the end, the dealers cards are revealed
+    } else {
+        cout<<"Player "<<player_number<<"'s card(s): "<<endl; //the player who's playing's cards
+    }
+    for(int i=0;i<player1.size();i++){
+        print_card_ascii(player1[i]);
+    }
+    cout<<endl;
+}
+
+int bust_score(vector<string> &player1, int player1_bs, map<string, int> &card_value){
+    string last_card = player1[player1.size()-1];
+    if(last_card=="A"){ //if someone gets an Ace, they can manually pick the value
+        int ace_value;
+        if(player1.size()<=2){
+            ace_value = 11;
+        } else {
+            cout<<"Pick Ace value (1 or 11): ";
+            cin>>ace_value;
+            while(ace_value!=1&&ace_value!=11){ //if the player inputs something other than 11 or 1
+                cout<<"Invalid choice. Pick Ace value (1 or 11): ";
+                cin>>ace_value;
+            }
+        }
+        player1_bs+=ace_value; //adds ace value to the player's score
+    } else {
+        player1_bs+=card_value[last_card];
+    }
+    return player1_bs;
+}
+
+void determine_winner(int players_bs[], int players_in_game){
+    vector<int> winners; //varaible for winner
+    int ai_bs = players_bs[0];
+
+    int best_score=-1;
+    for(int i=1;i<=players_in_game;i++){
+        if(players_bs[i]<=21&&players_bs[i]>best_score){
+            best_score=players_bs[i];
+        }
+    }
+    if(ai_bs<=21&&ai_bs>best_score){
+        best_score=ai_bs;
+    }
+
+    for(int i=1;i<=players_in_game;i++){
+        if(players_bs[i]==best_score){
+            winners.push_back(i);
+        }
+    }
+    if(ai_bs==best_score){
+        winners.push_back(0);
+    }
+
+    if(winners.size()==0){ //if the game finds no one to win
+        cout<<"Everyone went bust"<<endl;
+    } else if(winners.size()==1){ 
+        if(winners[0]==0){ //the Dealer is marked as player[0]
+            cout<<"Dealer wins!"<<endl;
+        } else {
+            cout<<"Player "<<winners[0]<<" Wins"<<endl; //depending on which []. the player is determined
+        }
+    } else {
+        cout<<"Tie between "; //if there are mmultiple winners (tie)
+        for(int i=0;i<winners.size();i++){
+            if(winners[i]==0){
+                cout<<"Dealer";
+            } else {
+                cout<<"Player "<<winners[i];
+            }
+            if(i!=winners.size()-1){
+                cout<<" and ";
+            }
         }
         cout<<endl;
     }
 }
 
-int bust_score(vector<string> &player1, int player1_bs, map<string, int> &card_value){
-    if(player1[player1.size()-1]=="A"){ //when player gets an ace
-        int ace_value; //ace's value
-        cout<<"Pick Ace value (1 or 11): ";
-        cin>>ace_value;
-        while(ace_value!=1&&ace_value!=11){
-            cout<<"Invalid choice. Pick Ace value (1 or 11): "<<endl;
-            cin>>ace_value;
-        }
-        player1_bs = ace_value + player1_bs; //add chosen Ace value
-    } else {
-        player1_bs += card_value[player1[player1.size()-1]]; //add the value of the latest card
-    }
-    return player1_bs;
-}
-
-// NEW WINNER FUNCTION
-void determine_winner(int players_bs[], int players_in_game){
-    vector<int> winners; //WHO WON
-    int ai_bs = players_bs[1];
-
-    //FIND HIGHEST SCORE NOT BUST
-    int best_score = -1;
-    for(int i = 0; i < players_in_game; i++){
-        if(players_bs[i] <= 21 && players_bs[i] > best_score){
-            best_score = players_bs[i];
-        }
-    }
-    if(ai_bs <= 21 && ai_bs > best_score){
-        best_score = ai_bs;
-    }
-
-    //WHO GOT BEST SCORE
-    for(int i = 0; i < players_in_game; i++){
-        if(players_bs[i] == best_score){
-            winners.push_back(i + 1); //+1 because players are numbered starting from 1
-        }
-    }
-    if(ai_bs == best_score){
-        winners.push_back(0); //0 MEANS AI
-    }
-
-    //PRINT RESULTS
-    if(winners.size() == 0){
-        cout<<"Everyone went bust"<<endl;
-    } else if(winners.size() == 1){
-        if(winners[0] == 0){
-            cout<<"Dealer wins!"<<endl;
-        } else {
-            cout<<"Player "<<winners[0]<<" wins!"<<endl;
-        }
-    } else {
-        cout<<"Tie between ";
-        for(int i = 0; i < winners.size(); i++){ //for multiple winners
-            if(winners[i] == 0){
-                cout<<"Dealer"; //in case of a tie with the dealer
-            } else {
-                cout<<"Player "<<winners[i]; //which player wins
-            }
-            if(i != winners.size() - 1){
-                cout<<" and ";
-            }
-        }
-    }
-}
-
-//VISUALS
 void print_card_ascii(string card){
-    cout<<"+-----+"<<endl;
+        cout<<"+-----+"<<endl; //top of the card     //SHOULD PRINT a card
     if(card=="10"){
-        cout<<"|10   |"<<endl;
+        cout<<"|10   |"<<endl; //top number            
         cout<<"|     |"<<endl;
-        cout<<"|   10|"<<endl;
+        cout<<"|   10|"<<endl; //bottom number
     } else {
-        cout<<"|"<<card<<"    |"<<endl;
+        cout<<"|"<<card<<"    |"<<endl; //card lines
         cout<<"|     |"<<endl;
         cout<<"|    "<<card<<"|"<<endl;
     }
-    cout<<"+-----+"<<endl;
+    cout<<"+-----+"<<endl; //bottom of card
 }
+
