@@ -6,118 +6,77 @@
 #include "funs.h"
 using namespace std;
 
-int main()
-{
-    string play;
-    int players_in_game;
-
+int main(){
     srand(time(NULL)); //for random every time
-    vector<string> players[4];
-    int players_bs[4]={0,0,0,0}; //possible amount of players stored
 
-    string card[52]={"A","A","A","A","2","2","2","2", //all possible cards
-                     "3","3","3","3","4","4","4","4",
-                     "5","5","5","5","6","6","6","6",
-                     "7","7","7","7","8","8","8","8",
-                     "9","9","9","9","10","10","10","10",
-                     "K","K","K","K","J","J","J","J",
-                     "Q","Q","Q","Q"};
+    //initialize players and bust scores
+    vector<string> players[5]; // 0 = dealer, 1 to 4 = players
+    int players_bs[5] = {0}; // bust scores
 
-    map<string,int>card_value={{"A",-1},{"2",2},{"3",3}, //all card values
-                                {"4",4},{"5",5},{"6",6},
-                                {"7",7},{"8",8},{"9",9},
-                                {"10",10},{"J",10},{"Q",10},{"K",10}};
+    //create deck cards (Mr. Kwan's technique)
+    string card[52] = {"A", "A", "A", "A", "2", "2", "2", "2", // all possible cards
+                       "3", "3", "3", "3", "4", "4", "4", "4",
+                       "5", "5", "5", "5", "6", "6", "6", "6",
+                       "7", "7", "7", "7", "8", "8", "8", "8",
+                       "9", "9", "9", "9", "10", "10", "10", "10",
+                       "K", "K", "K", "K", "J", "J", "J", "J",
+                       "Q", "Q", "Q", "Q"};
 
-    //Getting number of players
-    cout<<"Enter number of players (1-4): ";
-    cin>>players_in_game;
-    if(players_in_game<1||players_in_game>4){
-        cout<<"Invalid number of players."<<endl;
-        return 0;
+    // map card to value (Mr. Kwans technique)
+    map<string, int> card_value = {{"A", -1}, {"2", 2}, {"3", 3}, // all card values
+                                   {"4", 4}, {"5", 5}, {"6", 6},
+                                   {"7", 7}, {"8", 8}, {"9", 9},
+                                   {"10", 10}, {"J", 10}, {"Q", 10}, {"K", 10}};
+
+    int players_in_game; //to know how many players in game
+    cout << "Number of players (1-4): ";
+    cin >> players_in_game;
+
+    // Initial 2 cards each
+    for (int i = 0; i <= players_in_game; i++) { 
+        for (int j = 0; j < 2; j++) {
+            hit(card, players[i]);
+            players_bs[i] = bust_score(players[i], players_bs[i], card_value);
+        }
     }
-
-    int current_player=0;
-    //Dealing 2 cards to start
-    for(int i=0;i<players_in_game;i++){
-        hit(card,players[i]);
-        players_bs[i]=bust_score(players[i],players_bs[i],card_value);
-        hit(card,players[i]);
-        players_bs[i]=bust_score(players[i],players_bs[i],card_value);
-    }
-
-    //INITIAL DEAL: 2 cards for dealer (AI)
-    hit(card,players[1]);
-    players_bs[1]=bust_score(players[1],players_bs[1],card_value);
-    hit(card,players[1]);
-    players_bs[1]=bust_score(players[1],players_bs[1],card_value);
-
-    cout<<"Dealer's revealed card: "<<players[1][0]<<endl;
-    
-    //GAMEPLAY CODE
-    while(true){
-        cout<<"Player "<<(current_player+1)<<"'s turn."<<endl;
-
-        for(int j=0;j<players[current_player].size();j++){
-            print_card_ascii(players[current_player][j]);
-        }
-        cout<<"Total: "<<players_bs[current_player]<<endl;
-
-        play=hit_or_stay();
-
-        if(play=="STAY"){
-            current_player++;
-            if(current_player>=players_in_game){
-                break;
-            }
-            continue;
-        }
-
-        if(play=="HIT"){
-            hit(card,players[current_player]);
-            string last_card=players[current_player].back();
-            print_card_ascii(last_card);
-            // If the last card is Ace, manually handle its value
-            if(last_card == "A") {
-                char ace_choice;
-                cout << "You got an Ace! Do you want it as 1 or 11? (Enter 1 or 11): ";
-                cin >> ace_choice;
-                if(ace_choice == '1') {
-                    players_bs[current_player] += 1;
-                } else if(ace_choice == '11') {
-                    players_bs[current_player] += 11;
-                } else {
-                    cout << "Invalid input. Setting Ace value to 1." << endl;
-                    players_bs[current_player] += 1; // default to 1 if invalid
-                }
-            } else {
-                players_bs[current_player] = bust_score(players[current_player],players_bs[current_player],card_value);
-            }
-            display_card_info(players[current_player],players_bs[current_player],current_player+1);
-        }
-
-        if(players_bs[current_player]>21){
-            cout<<"Player "<<(current_player+1)<<" BUST!"<<endl;
-            current_player++;
-            if(current_player>=players_in_game){
+//GAMEPLAY
+    // Players' turn
+    for (int i = 1; i <= players_in_game; i++) {
+        while (players_bs[i] < 21) {
+            display_card_info(players[i], players_bs[i], i);
+            cout << "Current score: " << players_bs[i] <<endl;
+            string move = hit_or_stay();
+            if (move == "HIT" || move == "hit") {
+                hit(card, players[i]);
+                players_bs[i] = bust_score(players[i], players_bs[i], card_value);
+            } 
+            else if(move=="STAY" || move=="stay") {
+                display_card_info(players[i], players_bs[i], i);
                 break;
             }
         }
+        if (players_bs[i] > 21) {
+            display_card_info(players[i], players_bs[i], i);
+            cout<<"player's score: "<<players_bs[i]<<endl;
+            cout << "Player " <<i<< " Goes bust" <<endl;
+        }
     }
 
-    while(players_bs[1]<17){
-        hit(card,players[1]);
-        players_bs[1]=bust_score(players[1],players_bs[1],card_value);
+    // Dealer's turn
+    while (players_bs[0]<17) {
+        hit(card, players[0]);
+        players_bs[0]=bust_score(players[0], players_bs[0], card_value);
+    }
+    display_card_info(players[0], players_bs[0], 0);
+    cout <<"Dealer's final score: " <<players_bs[0] <<endl;
+    if (players_bs[0] > 21) {
+        cout <<"Dealer goes bust" <<endl;
     }
 
-    for(int i=0;i<players_in_game;i++){
-        display_card_info(players[i],players_bs[i],i+1);
-        cout<<"Player "<<(i+1)<<"'s score: "<<players_bs[i]<<endl;
-    }
-    cout<<"AI's cards: ";
-    display_card_info(players[1],players_bs[1],2);
-    cout<<"AI's score: "<<players_bs[1]<<endl;
-    //END OF GAME 
-    determine_winner(players_bs,players_in_game);
+//RESULTS
+determine_winner(players_bs, players_in_game);
 
     return 0;
 }
+
+
